@@ -1,5 +1,5 @@
 """
-Streamlit Roadside Audit App — v5
+Streamlit Roadside Audit App — v5 Enhanced UI
 NIT Calicut | Automated Roadside Hazard Audit System
 
 Logic: street_audit_v5.py
@@ -26,45 +26,352 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+/* ── Root theme ── */
+:root {
+    --bg-deep:      #0a0d14;
+    --bg-card:      #111520;
+    --bg-glass:     rgba(17, 21, 32, 0.85);
+    --accent-lime:  #c6f135;
+    --accent-cyan:  #38f0d4;
+    --accent-red:   #ff4757;
+    --accent-amber: #ffb142;
+    --border:       rgba(198, 241, 53, 0.18);
+    --text-primary: #eef1f8;
+    --text-muted:   #7a8299;
+    --font-display: 'Syne', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+}
+
+/* ── Global overrides ── */
+html, body, [class*="css"] {
+    font-family: var(--font-body);
+    background-color: var(--bg-deep) !important;
+    color: var(--text-primary) !important;
+}
+
+.stApp {
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(198,241,53,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 90% 80%, rgba(56,240,212,0.05) 0%, transparent 60%),
+        var(--bg-deep);
+    min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: var(--bg-card) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: 2rem;
+}
+
+/* Sidebar headings */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    font-family: var(--font-display) !important;
+    font-weight: 700 !important;
+    color: var(--accent-lime) !important;
+    letter-spacing: -0.02em;
+}
+
+/* ── Main title ── */
+h1 {
+    font-family: var(--font-display) !important;
+    font-weight: 800 !important;
+    font-size: 2.4rem !important;
+    letter-spacing: -0.04em !important;
+    background: linear-gradient(90deg, var(--accent-lime) 0%, var(--accent-cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0 !important;
+}
+
+/* ── Sub-headings ── */
+h2, h3, h4 {
+    font-family: var(--font-display) !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    letter-spacing: -0.02em !important;
+}
+
+/* ── Caption / helper text ── */
+.stCaption, [data-testid="stCaptionContainer"] p {
+    color: var(--text-muted) !important;
+    font-size: 0.8rem !important;
+}
+
+/* ── Metric cards ── */
 [data-testid="stMetric"] {
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 16px 20px;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    padding: 18px 20px !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-[data-testid="stMetricLabel"] { font-size: 0.82rem; color: #555; }
+
+[data-testid="stMetric"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(198, 241, 53, 0.12);
+}
+
+[data-testid="stMetric"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-lime), var(--accent-cyan));
+}
+
+[data-testid="stMetricLabel"] p {
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted) !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-family: var(--font-display) !important;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    color: var(--accent-lime) !important;
+    line-height: 1.1 !important;
+}
+
+/* ── Sliders ── */
+[data-testid="stSlider"] > div > div > div > div {
+    background: var(--accent-lime) !important;
+}
+
+.stSlider [data-baseweb="slider"] [data-testid="stTickBar"] {
+    color: var(--text-muted) !important;
+}
+
+/* ── File uploader ── */
+[data-testid="stFileUploader"] {
+    background: var(--bg-card) !important;
+    border: 1.5px dashed var(--border) !important;
+    border-radius: 14px !important;
+    transition: border-color 0.2s;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--accent-lime) !important;
+}
+
+[data-testid="stFileUploadDropzone"] {
+    background: transparent !important;
+}
+
+[data-testid="stFileUploadDropzone"] p {
+    color: var(--text-muted) !important;
+}
+
+/* ── Buttons ── */
+.stDownloadButton > button, .stButton > button {
+    background: linear-gradient(135deg, var(--accent-lime) 0%, var(--accent-cyan) 100%) !important;
+    color: #0a0d14 !important;
+    font-family: var(--font-display) !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.04em !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 18px !important;
+    transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease !important;
+    box-shadow: 0 0 20px rgba(198, 241, 53, 0.25) !important;
+}
+
+.stDownloadButton > button:hover, .stButton > button:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 28px rgba(198, 241, 53, 0.4) !important;
+}
+
+/* ── Divider ── */
+hr {
+    border-color: var(--border) !important;
+    margin: 1rem 0 !important;
+}
+
+/* ── Image container ── */
+[data-testid="stImage"] {
+    border-radius: 16px !important;
+    overflow: hidden;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 0 40px rgba(56, 240, 212, 0.06) !important;
+}
+
+/* ── Spinner ── */
+[data-testid="stSpinner"] {
+    color: var(--accent-lime) !important;
+}
+
+/* ── Info / alert boxes ── */
+[data-testid="stAlert"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    color: var(--text-muted) !important;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ── Custom component boxes ── */
 .hazard-box {
-    background: #fff2f2;
-    border-left: 4px solid #e53935;
-    border-radius: 6px;
-    padding: 10px 14px;
+    background: rgba(255, 71, 87, 0.08);
+    border-left: 3px solid var(--accent-red);
+    border-radius: 10px;
+    padding: 12px 16px;
     margin-bottom: 8px;
-    font-size: 0.88rem;
-    color: #b71c1c;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: #ffaab2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
+
 .safe-box {
-    background: #f2fff4;
-    border-left: 4px solid #43a047;
-    border-radius: 6px;
-    padding: 10px 14px;
+    background: rgba(198, 241, 53, 0.06);
+    border-left: 3px solid var(--accent-lime);
+    border-radius: 10px;
+    padding: 12px 16px;
     margin-bottom: 8px;
-    font-size: 0.88rem;
-    color: #1b5e20;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: #d6f57d;
 }
+
 .info-box {
-    background: #f0f4ff;
-    border-left: 4px solid #3949ab;
-    border-radius: 6px;
-    padding: 10px 14px;
+    background: rgba(56, 240, 212, 0.06);
+    border-left: 3px solid var(--accent-cyan);
+    border-radius: 10px;
+    padding: 12px 16px;
     margin-bottom: 8px;
-    font-size: 0.88rem;
-    color: #1a237e;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: #a0f5ea;
+    line-height: 1.6;
+}
+
+/* Hero badge */
+.hero-badge {
+    display: inline-block;
+    background: rgba(198, 241, 53, 0.1);
+    border: 1px solid rgba(198, 241, 53, 0.3);
+    color: var(--accent-lime);
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+}
+
+/* How-it-works cards */
+.how-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    height: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.how-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(198, 241, 53, 0.08);
+}
+
+.how-card-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+.how-card-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--accent-lime);
+    margin-bottom: 8px;
+}
+
+.how-card-body {
+    font-family: var(--font-body);
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+}
+
+/* Stats subheader */
+.section-label {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+/* Sidebar meta tag */
+.meta-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(198, 241, 53, 0.07);
+    border: 1px solid rgba(198, 241, 53, 0.15);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.77rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    width: 100%;
+}
+
+/* Override Streamlit markdown text */
+p, li {
+    font-family: var(--font-body) !important;
+    color: var(--text-primary) !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🛣️ Automated Roadside Hazard Audit System")
-st.caption("Final Year Project | National Institute of Technology, Calicut")
+# ── HERO HEADER ───────────────────────────────────────────────────────────────
+
+st.markdown('<div class="hero-badge">⚡ Final Year Project · NIT Calicut</div>', unsafe_allow_html=True)
+st.title("Roadside Hazard Audit System")
+st.markdown(
+    '<p style="color:#7a8299;font-family:\'DM Sans\',sans-serif;font-size:1rem;margin-top:-6px;">'
+    'AI-powered pole &amp; tree hazard detection · YOLOv9-seg · Pinhole depth model'
+    '</p>',
+    unsafe_allow_html=True,
+)
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
 
@@ -72,7 +379,7 @@ MODEL_PATH                  = 'best.pt'
 REAL_POLE_HEIGHT_M          = 8.0
 VEHICLE_SPEED_KMH           = 35.0
 FRAME_RATE_FPS              = 4.0
-CAMERA_VFOV_DEG             = 69.0   # Calibrate for your phone
+CAMERA_VFOV_DEG             = 69.0
 POLE_PROXIMITY_THRESHOLD_PX = 300
 CANOPY_ROAD_LEFT_RATIO      = 0.55
 CANOPY_ROAD_RIGHT_RATIO     = 0.45
@@ -88,7 +395,6 @@ def load_model():
 
 
 def get_class_indices(model):
-    """Resolve pole/tree class indices from model.names dynamically."""
     names    = {v.lower(): k for k, v in model.names.items()}
     pole_cls = names.get('pole', 0)
     tree_cls = names.get('tree', 1)
@@ -96,16 +402,11 @@ def get_class_indices(model):
 
 
 def focal_length_px(image_h, vfov_deg):
-    """Vertical focal length from image height and vertical FOV."""
     vfov_rad = np.radians(vfov_deg)
     return (image_h / 2.0) / np.tan(vfov_rad / 2.0)
 
 
 def robust_mask_extremes(pts):
-    """
-    Percentile-based top and base — immune to single outlier polygon points.
-    Returns top (x,y), base (x,y), and pixel height.
-    """
     top_y    = np.percentile(pts[:, 1], 2)
     base_y   = np.percentile(pts[:, 1], 98)
     top_idx  = np.argmin(np.abs(pts[:, 1] - top_y))
@@ -122,21 +423,12 @@ def compute_depth_weight(base_y, horizon_y, image_h):
 
 
 def distance_to_pole_m(px_h, focal_px):
-    """
-    Pinhole camera similar-triangles model:
-        D = (H_real × focal_px) / H_px
-    """
     if px_h < 5:
         return None
     return (REAL_POLE_HEIGHT_M * focal_px) / px_h
 
 
 def pole_to_pole_span_m(p_near, p_far, focal_px):
-    """
-    Along-road span between consecutive poles.
-    p_near: larger px_h (closer), p_far: smaller px_h (farther)
-    span = distance_to_far - distance_to_near
-    """
     d_near = distance_to_pole_m(p_near['px_h'], focal_px)
     d_far  = distance_to_pole_m(p_far['px_h'],  focal_px)
     if d_near is None or d_far is None:
@@ -147,10 +439,6 @@ def pole_to_pole_span_m(p_near, p_far, focal_px):
 # ─── CORE AUDIT FUNCTION ──────────────────────────────────────────────────────
 
 def run_audit(img, model, vfov_deg, pole_prox_px):
-    """
-    Runs the full v5 audit pipeline on a BGR image.
-    Returns annotated BGR image + structured results dict.
-    """
     h, w, _  = img.shape
     results  = model(img)[0]
     POLE_CLS, TREE_CLS = get_class_indices(model)
@@ -159,10 +447,8 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
     horizon_y = h * 0.47
 
     all_poles, all_trees = [], []
-    targets              = []   # always defined
-    hazards_log          = []   # list of dicts for sidebar display
-
-    # ── DATA EXTRACTION ──────────────────────────────────────────────────────
+    targets              = []
+    hazards_log          = []
 
     if results.masks is not None:
         for i, mask in enumerate(results.masks.xy):
@@ -189,8 +475,6 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
             elif cls == TREE_CLS:
                 all_trees.append(data)
 
-    # ── DOMINANT SIDE FILTER ─────────────────────────────────────────────────
-
     if all_poles:
         closest_p = max(all_poles, key=lambda x: x['base'][1])
         is_left   = closest_p['base'][0] < w / 2
@@ -200,12 +484,9 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
         else:
             targets = [p for p in all_poles if p['base'][0] > (w / 2 - SIDE_BUFFER_PX)]
 
-        # Sort nearest-first: largest px_h = closest
         targets.sort(key=lambda x: x['px_h'], reverse=True)
 
-    # ── ANNOTATE POLES & SPAN DISTANCES ──────────────────────────────────────
-
-    pole_distances = []   # list of (label, span_m, d_near, d_far)
+    pole_distances = []
 
     for i, p in enumerate(targets):
         d_m = distance_to_pole_m(p['px_h'], focal_px)
@@ -241,8 +522,6 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                             (mid[0], mid[1] - 12),
                             cv2.FONT_HERSHEY_DUPLEX, 0.85, (0, 255, 255), 2)
 
-    # ── TREE HAZARD LOGIC ────────────────────────────────────────────────────
-
     for i, tree in enumerate(all_trees):
         is_hazard = False
         reasons   = []
@@ -253,12 +532,10 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                          np.array(p['base']) - np.array(tree['base'])
                      ))
 
-            # Height check
             if tree['top'][1] < cp['top'][1]:
                 is_hazard = True
                 reasons.append("HEIGHT")
 
-            # Near-pole check
             dist_to_pole = np.linalg.norm(
                 np.array(cp['base']) - np.array(tree['base'])
             )
@@ -266,7 +543,6 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                 is_hazard = True
                 reasons.append("NEAR POLE")
 
-        # Canopy overhang — depth-gated
         x_min = np.min(tree['mask'][:, 0])
         x_max = np.max(tree['mask'][:, 0])
         if (tree['base'][1] > horizon_y
@@ -291,13 +567,11 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                     (tree['bbox'][0], tree['bbox'][1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
-    # Horizon line
     cv2.line(img, (0, int(horizon_y)), (w, int(horizon_y)),
              (180, 180, 180), 1, cv2.LINE_AA)
     cv2.putText(img, "horizon", (5, int(horizon_y) - 5),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (180, 180, 180), 1)
 
-    # Dashboard overlay on image
     overlay = img.copy()
     cv2.rectangle(overlay, (10, 10), (820, 88), (0, 0, 0), -1)
     cv2.addWeighted(overlay, 0.55, img, 0.45, 0, img)
@@ -308,12 +582,12 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
 
     return img, {
-        'poles'          : len(targets),
-        'trees'          : len(all_trees),
-        'hazards'        : len(hazards_log),
-        'hazards_log'    : hazards_log,
-        'pole_distances' : pole_distances,
-        'focal_px'       : focal_px,
+        'poles'           : len(targets),
+        'trees'           : len(all_trees),
+        'hazards'         : len(hazards_log),
+        'hazards_log'     : hazards_log,
+        'pole_distances'  : pole_distances,
+        'focal_px'        : focal_px,
         'metres_per_frame': METRES_PER_FRAME,
     }
 
@@ -323,7 +597,10 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
 model = load_model()
 
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.markdown(
+        '<h2 style="font-size:1.15rem;margin-bottom:1.2rem;">⚙️ Configuration</h2>',
+        unsafe_allow_html=True,
+    )
 
     vfov = st.slider(
         "Camera Vertical FOV (°)",
@@ -337,19 +614,34 @@ with st.sidebar:
     )
 
     st.divider()
-    st.header("📂 Upload Image")
+
+    st.markdown('<h2 style="font-size:1.15rem;margin-bottom:1rem;">📂 Upload Image</h2>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader(
         "Choose a roadside image",
         type=["jpg", "jpeg", "png"],
+        label_visibility="collapsed",
     )
 
     st.divider()
-    st.markdown("**Model:** YOLOv9-seg")
-    st.markdown("**Distance:** Pinhole camera model")
-    st.markdown(f"**Speed:** {VEHICLE_SPEED_KMH} km/h @ {FRAME_RATE_FPS} FPS")
-    st.markdown(f"**≈ {METRES_PER_FRAME:.2f} m per frame**")
+
+    # Model info as styled tags
+    st.markdown(
+        '<div class="meta-tag">🤖 &nbsp;Model: YOLOv9-seg</div>'
+        '<div class="meta-tag">📐 &nbsp;Distance: Pinhole camera</div>'
+        f'<div class="meta-tag">🚗 &nbsp;{VEHICLE_SPEED_KMH} km/h @ {FRAME_RATE_FPS} FPS</div>'
+        f'<div class="meta-tag">📏 &nbsp;≈ {METRES_PER_FRAME:.2f} m per frame</div>',
+        unsafe_allow_html=True,
+    )
+
     st.divider()
-    st.caption("Developer: Ankur Kumar Singh\nDigvijay Patel\nKrishna Singh")
+    st.markdown(
+        '<p style="font-size:0.75rem;color:#7a8299;line-height:1.7;">'
+        '👨‍💻 Ankur Kumar Singh<br>'
+        '👨‍💻 Digvijay Patel<br>'
+        '👨‍💻 Krishna Singh'
+        '</p>',
+        unsafe_allow_html=True,
+    )
 
 # ── MAIN CONTENT ──────────────────────────────────────────────────────────────
 
@@ -357,10 +649,9 @@ if uploaded_file is not None:
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     img_raw    = cv2.imdecode(file_bytes, 1)
 
-    with st.spinner("Running audit..."):
+    with st.spinner("Running hazard audit…"):
         annotated, info = run_audit(img_raw.copy(), model, vfov, pole_prox)
 
-    # Layout
     col_img, col_stats = st.columns([3, 1])
 
     with col_img:
@@ -371,22 +662,22 @@ if uploaded_file is not None:
         )
 
     with col_stats:
-        st.subheader("📊 Audit Results")
-
+        # ── Metrics ──
+        st.markdown('<div class="section-label">Summary</div>', unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         c1.metric("Poles",   info['poles'])
         c2.metric("Trees",   info['trees'])
         c3.metric("Hazards", info['hazards'])
 
-        st.divider()
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        # Hazard summary
+        # ── Hazard detail ──
+        st.markdown('<div class="section-label">⚠️ Hazard Detail</div>', unsafe_allow_html=True)
         if info['hazards'] > 0:
-            st.markdown("#### ⚠️ Hazard Detail")
             for h_item in info['hazards_log']:
                 tag = " + ".join(h_item['reasons'])
                 st.markdown(
-                    f'<div class="hazard-box">🌳 {h_item["tree"]} — <b>{tag}</b></div>',
+                    f'<div class="hazard-box">🌳 <b>{h_item["tree"]}</b> &nbsp;—&nbsp; {tag}</div>',
                     unsafe_allow_html=True,
                 )
         else:
@@ -395,30 +686,29 @@ if uploaded_file is not None:
                 unsafe_allow_html=True,
             )
 
-        st.divider()
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        # Pole distances
+        # ── Pole spacing ──
+        st.markdown('<div class="section-label">📏 Pole Spacing</div>', unsafe_allow_html=True)
         if info['pole_distances']:
-            st.markdown("#### 📏 Pole Spacing")
             for label, span, d_near, d_far in info['pole_distances']:
                 st.markdown(
                     f'<div class="info-box">'
-                    f'<b>{label}</b> → {span:.1f} m span<br>'
-                    f'<span style="font-size:0.78rem;color:#3949ab">'
+                    f'<b>{label}</b> &nbsp;→&nbsp; {span:.1f} m span<br>'
+                    f'<span style="font-size:0.76rem;opacity:0.7;">'
                     f'near {d_near:.0f} m · far {d_far:.0f} m from cam'
                     f'</span></div>',
                     unsafe_allow_html=True,
                 )
             st.caption(
-                f"Frame-speed ref: ~{info['metres_per_frame']:.2f} m/frame "
-                f"| focal: {info['focal_px']:.0f} px"
+                f"~{info['metres_per_frame']:.2f} m/frame · focal {info['focal_px']:.0f} px"
             )
         else:
             st.caption("No consecutive pole pairs detected.")
 
-        st.divider()
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        # Download annotated image
+        # ── Download ──
         _, buf = cv2.imencode('.jpg', annotated)
         st.download_button(
             label="⬇️ Download Annotated Image",
@@ -429,14 +719,38 @@ if uploaded_file is not None:
         )
 
 else:
-    st.info("👈 Upload a roadside image in the sidebar to begin the audit.")
+    # ── Empty state ──
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.info("👈 &nbsp;Upload a roadside image in the sidebar to begin the audit.")
 
-    st.markdown("---")
-    st.markdown("### How it works")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown('<div class="section-label" style="max-width:700px;">How it works</div>', unsafe_allow_html=True)
+
     col_a, col_b, col_c = st.columns(3)
+
     with col_a:
-        st.markdown("**🔍 Detection**\n\nYOLOv9-seg model detects poles and trees with instance segmentation masks.")
+        st.markdown("""
+        <div class="how-card">
+            <div class="how-card-icon">🔍</div>
+            <div class="how-card-title">Detection</div>
+            <div class="how-card-body">YOLOv9-seg model detects poles and trees with instance segmentation masks, resolving class IDs dynamically from model metadata.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col_b:
-        st.markdown("**📐 Distance**\n\nPinhole camera model: `D = (H_real × f) / H_px`. Span = far distance − near distance.")
+        st.markdown("""
+        <div class="how-card">
+            <div class="how-card-icon">📐</div>
+            <div class="how-card-title">Distance</div>
+            <div class="how-card-body">Pinhole camera model: <code style="background:rgba(198,241,53,0.1);color:#c6f135;padding:1px 5px;border-radius:4px;">D = (H_real × f) / H_px</code>. Pole-to-pole span equals far distance minus near distance.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col_c:
-        st.markdown("**⚠️ Hazard logic**\n\nTree flagged if: taller than nearest pole, canopy over road centre, or within proximity threshold of a pole.")
+        st.markdown("""
+        <div class="how-card">
+            <div class="how-card-icon">⚠️</div>
+            <div class="how-card-title">Hazard Logic</div>
+            <div class="how-card-body">A tree is flagged when it is taller than the nearest pole, its canopy overhangs the road centre, or its base falls within the proximity threshold of a pole.</div>
+        </div>
+        """, unsafe_allow_html=True)
