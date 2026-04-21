@@ -10,6 +10,7 @@ UI: Redesigned with dark industrial/tech aesthetic
   - Depth-gated canopy check
   - NEAR POLE hazard reason
   - targets always initialized (no NameError)
+  - FIX: Pole labels always fully visible with background rect & smart positioning
 """
 
 import cv2
@@ -471,6 +472,46 @@ def pole_to_pole_span_m(p_near, p_far, focal_px):
     return abs(d_far - d_near), d_near, d_far
 
 
+# ─── LABEL DRAWING HELPER ─────────────────────────────────────────────────────
+
+def draw_label_with_bg(img, text, anchor_x, anchor_y, font, font_scale, thickness,
+                        text_color, bg_color, padding=6, prefer_above=True):
+    """
+    Draw text with a filled background rectangle.
+    Automatically flips label below the anchor if it would be clipped at the top.
+    Clamps horizontally so the label never goes outside the image width.
+    """
+    h_img, w_img = img.shape[:2]
+    (tw, th), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+
+    box_w = tw + padding * 2
+    box_h = th + baseline + padding * 2
+
+    # Decide vertical placement
+    if prefer_above and anchor_y - box_h - 2 >= 0:
+        box_y1 = anchor_y - box_h - 2
+    else:
+        box_y1 = anchor_y + 4          # place below anchor
+
+    box_y2 = box_y1 + box_h
+
+    # Clamp horizontally
+    box_x1 = max(0, min(anchor_x, w_img - box_w))
+    box_x2 = box_x1 + box_w
+
+    # Background rect
+    cv2.rectangle(img, (box_x1, box_y1), (box_x2, box_y2), bg_color, -1)
+    # Thin accent border on top
+    cv2.rectangle(img, (box_x1, box_y1), (box_x2, box_y2), text_color, 1)
+
+    # Text origin
+    text_x = box_x1 + padding
+    text_y = box_y1 + padding + th
+
+    cv2.putText(img, text, (text_x, text_y), font, font_scale, text_color, thickness,
+                cv2.LINE_AA)
+
+
 # ─── CORE AUDIT FUNCTION ──────────────────────────────────────────────────────
 
 def run_audit(img, model, vfov_deg, pole_prox_px):
@@ -484,6 +525,9 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
     all_poles, all_trees = [], []
     targets              = []
     hazards_log          = []
+
+    FONT       = cv2.FONT_HERSHEY_SIMPLEX
+    FONT_DUPLEX = cv2.FONT_HERSHEY_DUPLEX
 
     if results.masks is not None:
         for i, mask in enumerate(results.masks.xy):
@@ -525,15 +569,29 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
 
     for i, p in enumerate(targets):
         d_m = distance_to_pole_m(p['px_h'], focal_px)
-        dist_label = f"({d_m:.0f}m away)" if d_m else ""
+        dist_label = f"({d_m:.0f}m)" if d_m else ""
+        pole_label = f"POLE P{i+1} {dist_label}".strip()
 
+        # ── Bounding box ──
         cv2.rectangle(img,
                       (p['bbox'][0], p['bbox'][1]),
                       (p['bbox'][2], p['bbox'][3]),
                       (255, 120, 0), 2)
-        cv2.putText(img, f"POLE P{i+1} {dist_label}",
-                    (p['bbox'][0], p['bbox'][1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 120, 0), 2)
+
+        # ── Label with background — anchored at top-left of bbox ──
+        draw_label_with_bg(
+            img,
+            text        = pole_label,
+            anchor_x    = p['bbox'][0],
+            anchor_y    = p['bbox'][1],
+            font        = FONT,
+            font_scale  = 0.55,
+            thickness   = 2,
+            text_color  = (255, 120, 0),
+            bg_color    = (0, 0, 0),
+            padding     = 5,
+            prefer_above= True,
+        )
 
         if i < len(targets) - 1:
             p_near, p_far = targets[i], targets[i + 1]
@@ -547,15 +605,15 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                     (p_near['base'][0] + p_far['base'][0]) // 2,
                     (p_near['base'][1] + p_far['base'][1]) // 2,
                 )
-                label = f"{span_m:.1f}m span"
-                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_DUPLEX, 0.85, 2)
+                span_text = f"{span_m:.1f}m span"
+                (tw, th), _ = cv2.getTextSize(span_text, FONT_DUPLEX, 0.85, 2)
                 cv2.rectangle(img,
                               (mid[0] - 6, mid[1] - th - 16),
                               (mid[0] + tw + 6, mid[1] + 4),
                               (0, 0, 0), -1)
-                cv2.putText(img, label,
+                cv2.putText(img, span_text,
                             (mid[0], mid[1] - 12),
-                            cv2.FONT_HERSHEY_DUPLEX, 0.85, (0, 255, 255), 2)
+                            FONT_DUPLEX, 0.85, (0, 255, 255), 2)
 
     for i, tree in enumerate(all_trees):
         is_hazard = False
@@ -598,14 +656,26 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
                       (tree['bbox'][0], tree['bbox'][1]),
                       (tree['bbox'][2], tree['bbox'][3]),
                       color, 2)
-        cv2.putText(img, label,
-                    (tree['bbox'][0], tree['bbox'][1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+        # ── Tree label with background ──
+        draw_label_with_bg(
+            img,
+            text        = label,
+            anchor_x    = tree['bbox'][0],
+            anchor_y    = tree['bbox'][1],
+            font        = FONT,
+            font_scale  = 0.6,
+            thickness   = 2,
+            text_color  = color,
+            bg_color    = (0, 0, 0),
+            padding     = 5,
+            prefer_above= True,
+        )
 
     cv2.line(img, (0, int(horizon_y)), (w, int(horizon_y)),
              (180, 180, 180), 1, cv2.LINE_AA)
     cv2.putText(img, "horizon", (5, int(horizon_y) - 5),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (180, 180, 180), 1)
+                FONT, 0.4, (180, 180, 180), 1)
 
     overlay = img.copy()
     cv2.rectangle(overlay, (10, 10), (820, 88), (0, 0, 0), -1)
@@ -614,7 +684,7 @@ def run_audit(img, model, vfov_deg, pole_prox_px):
               f"TREES: {len(all_trees)}  |  HAZARDS: {len(hazards_log)}  |  "
               f"focal={focal_px:.0f}px  |  ~{METRES_PER_FRAME:.2f} m/frame")
     cv2.putText(img, status, (20, 55),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+                FONT, 0.55, (255, 255, 255), 2)
 
     return img, {
         'poles'           : len(targets),
@@ -731,10 +801,40 @@ if uploaded_file is not None:
         </div>
         """, unsafe_allow_html=True)
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Poles",   info['poles'])
-        c2.metric("Trees",   info['trees'])
-        c3.metric("Hazards", info['hazards'])
+        st.markdown(f"""
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:4px;">
+            <div style="background:linear-gradient(135deg,#0d1a2e,#0f2035);
+                        border:1px solid rgba(0,200,255,0.2); border-top:2px solid #00c8ff;
+                        border-radius:4px; padding:12px 8px; text-align:center;
+                        box-shadow:0 4px 24px rgba(0,180,255,0.1);">
+                <div style="font-family:'Space Mono',monospace; font-size:0.6rem;
+                            letter-spacing:0.14em; text-transform:uppercase;
+                            color:#4a7fa5; margin-bottom:6px; white-space:nowrap;">Poles</div>
+                <div style="font-family:'Rajdhani',sans-serif; font-size:2rem;
+                            font-weight:700; color:#ffffff; line-height:1;">{info['poles']}</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#0d1a2e,#0f2035);
+                        border:1px solid rgba(0,200,255,0.2); border-top:2px solid #00c8ff;
+                        border-radius:4px; padding:12px 8px; text-align:center;
+                        box-shadow:0 4px 24px rgba(0,180,255,0.1);">
+                <div style="font-family:'Space Mono',monospace; font-size:0.6rem;
+                            letter-spacing:0.14em; text-transform:uppercase;
+                            color:#4a7fa5; margin-bottom:6px; white-space:nowrap;">Trees</div>
+                <div style="font-family:'Rajdhani',sans-serif; font-size:2rem;
+                            font-weight:700; color:#ffffff; line-height:1;">{info['trees']}</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#0d1a2e,#0f2035);
+                        border:1px solid rgba(0,200,255,0.2); border-top:2px solid #00c8ff;
+                        border-radius:4px; padding:12px 8px; text-align:center;
+                        box-shadow:0 4px 24px rgba(0,180,255,0.1);">
+                <div style="font-family:'Space Mono',monospace; font-size:0.6rem;
+                            letter-spacing:0.14em; text-transform:uppercase;
+                            color:#4a7fa5; margin-bottom:6px; white-space:nowrap;">Hazards</div>
+                <div style="font-family:'Rajdhani',sans-serif; font-size:2rem;
+                            font-weight:700; color:#ffffff; line-height:1;">{info['hazards']}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.markdown('<div style="height:1px; background:linear-gradient(90deg, transparent, rgba(0,200,255,0.2), transparent); margin:14px 0;"></div>', unsafe_allow_html=True)
 
